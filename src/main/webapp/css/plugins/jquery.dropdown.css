@@ -11,12 +11,15 @@
 	padding:5px 0;
 	margin:10px;
 	background:#FFF;
-	border: 1px solid #e0e0e0;
+	border: 1px solid #ddd;
     -webkit-border-radius: 4px;
     -moz-border-radius: 4px;
     -ms-border-radius: 4px;
     -o-border-radius: 4px;
     border-radius: 4px;
+    -webkit-box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+       -moz-box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);	
     z-index:1000;
 }
 #dropdown.arrow-down{
@@ -81,7 +84,7 @@
 	font-weight: normal;
 	font-size:15px;
 	line-height: 20px;
-	color: #444;
+	color: inherit;
 	white-space: nowrap;
 	text-align:left;
 	text-decoration:none;
