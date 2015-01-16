@@ -1084,6 +1084,14 @@
         return date;
     }
     
+    /**
+     * Location URL manipulation
+     * 
+     * @method addParameter {Function}
+     * @method removeParameter {Function}
+     * @method getParameter {Function}
+     * @method redirect_to {Function}
+     */
     var _location = {
         addParameter: function(key, value, sourceURL){
             var sourceURL = (sourceURL ? sourceURL : location.href),
