@@ -1,0 +1,34 @@
+<div class="row">
+    
+    <ng-include src="'templates/left_side_.html'"></ng-include>
+    
+    <div class="col-xs-8 _splr30 right-side">
+
+        <div class="panel panel-bordered">
+            <div class="panel-heading">
+                <b><i class="icon-fi-plus-circle"></i> {{isEditMode ? captions.editText : captions.addText}}:</b>
+            </div>
+            <div class="panel-body">
+                <div class="row">
+                    <form ng-submit="submitData()">
+                        <div class="form-group row" ng-class="{'hidden': isEditMode}">
+                            <label for="inputTopic" style="display:block">{{captions.topic}}:</label>
+                            <div class="inputTopicAdd col-xs-6 nopadding">
+                                <input type="text" class="form-control" id="inputTopic" ng-model="post_topic" placeholder="{{captions.addTopicInput}}" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="inputText">{{captions.text}}:</label>
+                            <textarea class="form-control _4aS" id="inputText" ng-model="post_text" rows="5" required></textarea> 
+                        </div>
+                        <div class="row">
+                            <a href="javascript:history.back()" class="pull-left" style="font-size:12px; color:#888; margin-top:5px;"><i class="icon-fi-arrow-circle-left"></i> {{captions.cancel}}</a>
+                            <button type="submit" class="btn btn-success btn-sm pull-right"><i class="icon-fi-paper-plane"></i> {{captions.submit}}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>

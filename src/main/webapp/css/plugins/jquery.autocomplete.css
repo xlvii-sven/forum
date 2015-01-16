@@ -1,0 +1,57 @@
+.autocompleteBox {
+	position:absolute;
+	top:0;
+	left:0;
+	min-width: 160px;
+	padding:5px 0;
+	margin:10px 0px;
+	background:#FFF;
+	border:1px solid #C1C1C1;
+	border-radius:4px;
+	z-index:1000;
+	-webkit-box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+           -moz-box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+.autocompleteBox ul{
+	list-style: none;
+	margin:0;
+	padding:0;
+	overflow: auto;
+    overflow-x: hidden;
+}
+.autocompleteBox ul li a{
+	display:block;
+	padding: 3px 20px;
+	clear: both;
+	cursor:pointer;
+	font-family:sans-serif;
+	font-weight: normal;
+	font-size:14px;
+	line-height: 20px;
+	color: #333333;
+	white-space: nowrap;
+	text-align:left;
+	text-decoration:none;
+}
+.autocompleteBox ul li a:hover{
+    background-color: #f1f1f1;
+}
+.autocompleteBox ul li.active a,
+.autocompleteBox ul li a:active,
+.autocompleteBox ul li a:focus{
+	color: #fff;
+	text-decoration: none;
+	background-color: #428bca;
+}
+.autocompleteBox ul li.groupTitle{
+    font-weight: bold;
+}
+.autocompleteBox ul li.divider{
+	height: 1px;
+	margin: 6px 1px;
+	display:block;
+	overflow: hidden;
+	background-color: #e5e5e5;
+	cursor:default;
+}
