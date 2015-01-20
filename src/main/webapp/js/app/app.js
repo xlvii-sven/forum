@@ -2,7 +2,7 @@
  * AngularJS | Forum
  * Copyright (c) 2015 Infodesire
  * Website: http://infodesire.com/
- * Version: 0.1 (16-Jan-2015)
+ * Version: 0.1.2 (19-Jan-2015)
  * Requires: AngularJS 1.3 or later, jQuery v1.7.1 or later 
  */
 (function(){
@@ -16,7 +16,7 @@
      */
     var app = angular.module('forum', ['ngRoute', 'ngSanitize']);
     var Root = '/forum/',
-        restBase = '/forum/',
+        restBase = '/flyer/',
         _captions = {};
 
     /**
@@ -203,7 +203,7 @@
                 if(val.inReplyTo){
                     EntriesService.get(val.inReplyTo, function(data, opts){
                         if(data && data.Entries){ 
-                            Entries[opts.key].inReplyToName = data.Entries[0].lastModifiedBy;
+                            Entries[opts.key].inReplyToName = data.Entries[0].lastModifiedByName;
                         }
 
                         n++;
@@ -291,6 +291,21 @@
                     OthersService.notify($scope.captions.message, $scope.captions.entryDeleted, "<i class=\"icon-fi-check-circle\"></i>");
                     
                     // Remove from Memory
+                    for(var key in $scope.topics){
+                        var value = $scope.topics[key];
+                        if(value.lastEntry == currentId){
+                            TopicsService.get(value.id, function(data, opts){
+                                if(!data || !data.Entries){ return false }
+                                
+                                if($scope.topics[opts.key].id == data.Entries[0].id){ 
+                                    $scope.topics[opts.key] = data.Entries[0];
+                                }
+                                
+                            }, {key: key});
+                            break;   
+                        }
+                    }
+                    
                     $scope.entries.filter(function(value, index){
                         if(value.id == currentId){
                             $scope.entries.splice(index, 1);
@@ -343,7 +358,7 @@
                 template = '<div class="_5prEntriesList-item-reply padding015 gr9Ch" data-inReplyTo-id="'+id+'">\
                                 <form ng-submit="submitReply($event, \''+id+'\', '+timestamp+', \''+topic+'\', \''+username+'\')">\
                                     <div class="form-group">\
-                                        <label for="inputText-'+id+'">{{captions.text}}</label>\
+                                        <label for="inputText-'+id+'">{{captions.text}}:</label>\
                                         <textarea class="form-control _4aS" id="inputText-'+id+'" ng-model="post_reply_text_'+timestamp+'" rows="5" required></textarea>\
                                     </div>\
                                     <div class="row">\
@@ -428,6 +443,12 @@
                             value.replies.push(data.Entries[0]);
                         }
                     });
+                    $scope.topics.filter(function(value, index){
+                        if(value.title == topic){
+                            value.lastEntryText = data.Entries[0].text;
+                            value.lastEntry = data.Entries[0].id;
+                        }
+                    });
                 }
                 
                 parent.remove();
@@ -478,8 +499,8 @@
                                                     <div class="_5prEntriesList-item-topic"></div>\
                                                     <div class="_5prEntriesList-item-text"><p style="white-space: pre-wrap;">{{rEntry.text}}</p></div>\
                                                     <div class="row _5prEntriesList-item-bottom">\
-                                                        <div class="_5prEntriesList-item-info col-xs-6"><ul class="list-inline"><li><i class="icon-fi-user" data-title="{{captions.user}}"></i> {{rEntry.lastModifiedBy}}</li> <li><i class="icon-fi-calendar" data-title="{{captions.date}}"></i> {{rEntry.lastModified | date:\'HH:mm dd-MM-yyyy\'}}</li> <li ng-show="rEntry.replies"><i class="icon-fi-comment-o" data-title="{{captions.replies}}"></i> {{rEntry.replies.length}}</li></ul></div>\
-                                                        <div class="_5prEntriesList-item-actions col-xs-6 pull-right text-right"><ul class="list-inline"><li ng-show="rEntry.replies"><a class="item-actions-conversationDown" data-title="{{captions.conversationDown}}" ng-click="loadConversationDown($event, rEntry.id, rEntry)"><i class="icon-fi-comment-down"></i></a></li><li style="padding-right:0"><a ng-click="replyBtn($event, rEntry.id, rEntry.topic, rEntry.lastModifiedBy)" class="btn btn-warning btn-sm _5prEntriesList-item-replyBtn">{{captions.reply | ucfirst}}</a></li></ul></div>\
+                                                        <div class="_5prEntriesList-item-info col-xs-6"><ul class="list-inline"><li><i class="icon-fi-user" data-title="{{captions.user}}"></i> {{rEntry.lastModifiedByName}}</li> <li><i class="icon-fi-calendar" data-title="{{captions.date}}"></i> {{rEntry.lastModified | date:\'HH:mm dd-MM-yyyy\'}}</li> <li ng-show="rEntry.replies"><i class="icon-fi-comment-o" data-title="{{captions.replies}}"></i> {{rEntry.replies.length}}</li></ul></div>\
+                                                        <div class="_5prEntriesList-item-actions col-xs-6 pull-right text-right"><ul class="list-inline"><li ng-show="rEntry.replies"><a class="item-actions-conversationDown" data-title="{{captions.conversationDown}}" ng-click="loadConversationDown($event, rEntry.id, rEntry)"><i class="icon-fi-comment-down"></i></a></li><li style="padding-right:0"><a ng-click="replyBtn($event, rEntry.id, rEntry.topic, rEntry.lastModifiedByName)" class="btn btn-warning btn-sm _5prEntriesList-item-replyBtn">{{captions.reply | ucfirst}}</a></li></ul></div>\
                                                     </div>\
                                                 </div>\
                                             </div>\
@@ -546,8 +567,8 @@
                                             <div class="_5prEntriesList-item-topic"></div>\
                                             <div class="_5prEntriesList-item-text"><p style="white-space: pre-wrap;">{{rEntry.text}}</p></div>\
                                             <div class="row _5prEntriesList-item-bottom">\
-                                                <div class="_5prEntriesList-item-info col-xs-6"><ul class="list-inline"><li><i class="icon-fi-user" data-title="{{captions.user}}"></i> {{rEntry.lastModifiedBy}}</li> <li><i class="icon-fi-calendar" data-title="{{captions.date}}"></i> {{rEntry.lastModified | date:\'HH:mm dd-MM-yyyy\'}}</li> <li ng-show="rEntry.replies"><i class="icon-fi-comment-o" data-title="{{captions.replies}}"></i> {{rEntry.replies.length}}</li></ul></div>\
-                                                <div class="_5prEntriesList-item-actions col-xs-6 pull-right text-right"><ul class="list-inline"><li ng-show="rEntry.replies"><a class="item-actions-conversationDown" data-title="{{captions.conversationDown}}" ng-click="loadConversationDown($event, rEntry.id, rEntry)"><i class="icon-fi-comment-down"></i></a></li><li style="padding-right:0"><a ng-click="replyBtn($event, rEntry.id, rEntry.topic, rEntry.lastModifiedBy)" class="btn btn-warning btn-sm _5prEntriesList-item-replyBtn">{{captions.reply | ucfirst}}</a></li></ul></div>\
+                                                <div class="_5prEntriesList-item-info col-xs-6"><ul class="list-inline"><li><i class="icon-fi-user" data-title="{{captions.user}}"></i> {{rEntry.lastModifiedByName}}</li> <li><i class="icon-fi-calendar" data-title="{{captions.date}}"></i> {{rEntry.lastModified | date:\'HH:mm dd-MM-yyyy\'}}</li> <li ng-show="rEntry.replies"><i class="icon-fi-comment-o" data-title="{{captions.replies}}"></i> {{rEntry.replies.length}}</li></ul></div>\
+                                                <div class="_5prEntriesList-item-actions col-xs-6 pull-right text-right"><ul class="list-inline"><li ng-show="rEntry.replies"><a class="item-actions-conversationDown" data-title="{{captions.conversationDown}}" ng-click="loadConversationDown($event, rEntry.id, rEntry)"><i class="icon-fi-comment-down"></i></a></li><li style="padding-right:0"><a ng-click="replyBtn($event, rEntry.id, rEntry.topic, rEntry.lastModifiedByName)" class="btn btn-warning btn-sm _5prEntriesList-item-replyBtn">{{captions.reply | ucfirst}}</a></li></ul></div>\
                                             </div>\
                                         </div>\
                                     </div>\
@@ -757,10 +778,10 @@
             });
         }
         
-        this.get = function(id, callback){
+        this.get = function(id, callback, opts){
             AjaxService.send('get', 'rest/api/json/0/topics/' + id).success(function(r) {
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
-                    if(callback){callback(r);}else{return true;};
+                    if(callback){callback(r, (opts ? opts : null));}else{return true;};
                 }else{
                     if(callback){callback(false);}else{return false;};
                 }
