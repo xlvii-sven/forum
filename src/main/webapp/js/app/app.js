@@ -16,7 +16,7 @@
      */
     var app = angular.module('forum', ['ngRoute', 'ngSanitize']);
     var Root = '/forum/',
-        restBase = '/flyer/',
+        restBase = '/forum/',
         _captions = {};
 
     /**
