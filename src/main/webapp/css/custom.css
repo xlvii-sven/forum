@@ -244,14 +244,13 @@ blockquote {
 }
 
 .header-logo {
-    background: #3d9cdb;
-    color: #fff;
+    background: #fdfdfd;
 }
 
 .header-logo h3 {
     margin: 0;
     padding: 20px 15px;
-    color: #f7fafa;
+    color: #444;
     font-weight: bold;
 }
 
@@ -269,7 +268,7 @@ blockquote {
 }
 
 .header-menu {
-    min-height: 6px;
+    min-height: 4px;
     background: #fff;
     border-bottom: 1px solid #c8dce8;
 }
