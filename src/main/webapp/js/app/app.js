@@ -15,8 +15,8 @@
      * @static
      */
     var app = angular.module('forum', ['ngRoute', 'ngSanitize']);
-    var Root = '/forum/',
-        restBase = '/forum/',
+    var Root = inIframe() ? '/projectile/apps/forum/' : '/forum/',
+        restBase = inIframe() ? '/projectile/restapps/forum/' : '/forum/rest/',
         _captions = {};
 
     /**
@@ -767,7 +767,7 @@
      */
     app.service('TopicsService', function($http, AjaxService){
         this.list = function(callback){
-            AjaxService.send('get', 'rest/api/json/0/topics').success(function(r){
+            AjaxService.send('get', 'api/json/0/topics').success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};
                 }else{
@@ -779,7 +779,7 @@
         }
         
         this.get = function(id, callback, opts){
-            AjaxService.send('get', 'rest/api/json/0/topics/' + id).success(function(r) {
+            AjaxService.send('get', 'api/json/0/topics/' + id).success(function(r) {
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r, (opts ? opts : null));}else{return true;};
                 }else{
@@ -791,7 +791,7 @@
         }
         
         this.find = function(d, callback){
-            AjaxService.send('get', 'rest/api/json/0/topics?title=' + d).success(function(r) {
+            AjaxService.send('get', 'api/json/0/topics?title=' + d).success(function(r) {
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};   
                 }else{
@@ -803,7 +803,7 @@
         }
         
         this.update = function(id, data, callback){
-            AjaxService.send('put',  'rest/api/json/0/topics/' + id, data).success(function(r){
+            AjaxService.send('put',  'api/json/0/topics/' + id, data).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};
                 }else{
@@ -829,7 +829,7 @@
      */
     app.service('EntriesService', function($http, AjaxService){
         this.list = function(id, callback){
-            AjaxService.send('get', 'rest/api/json/0/forumentries' + (id != null ? '?topic='+ id : '' )).success(function(r){
+            AjaxService.send('get', 'api/json/0/forumentries' + (id != null ? '?topic='+ id : '' )).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};
                 }else{
@@ -841,7 +841,7 @@
         }
         
         this.get = function(id, callback, opts){
-            AjaxService.send('get', 'rest/api/json/0/forumentries/' + id).success(function(r){
+            AjaxService.send('get', 'api/json/0/forumentries/' + id).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r,(opts ? opts : null));}else{return true;};
                 }else{
@@ -853,7 +853,7 @@
         }
         
         this.create = function(data, callback){
-            AjaxService.send('post', 'rest/api/json/0/forumentries', data).success(function(r){
+            AjaxService.send('post', 'api/json/0/forumentries', data).success(function(r){
                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};
                 }else{
@@ -866,7 +866,7 @@
         }
         
         this.update = function(id, data, callback){
-            AjaxService.send('put',  'rest/api/json/0/forumentries/' + id, data).success(function(r){
+            AjaxService.send('put',  'api/json/0/forumentries/' + id, data).success(function(r){
                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;}
                 }else{
@@ -879,7 +879,7 @@
         }
         
         this.delete = function(id, callback){
-            AjaxService.send('delete', 'rest/api/json/0/forumentries/' + id).success(function(r){
+            AjaxService.send('delete', 'api/json/0/forumentries/' + id).success(function(r){
                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};
                 }else{
@@ -892,7 +892,7 @@
         }
         
         this.replies = function(id, callback, opts){
-            AjaxService.send('get', 'rest/api/json/0/forumentries' + (id != null ? '?inReplyTo='+ id : '' )).success(function(r){
+            AjaxService.send('get', 'api/json/0/forumentries' + (id != null ? '?inReplyTo='+ id : '' )).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r, (opts ? opts : null));}else{return true;};
                 }else{
@@ -904,7 +904,7 @@
         }
         
         this.conversation = function(id, callback, opts){
-            AjaxService.send('get', 'rest/api/json/0/conversations/' + id).success(function(r){
+            AjaxService.send('get', 'api/json/0/conversations/' + id).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r,(opts ? opts : null));}else{return true;};
                 }else{
@@ -924,7 +924,7 @@
      */
     app.service('UsersService', function($http, AjaxService){
         this.get = function(id, callback){
-            AjaxService.send('get', 'rest/api/json/0/employees/'+ id).success(function(r){
+            AjaxService.send('get', 'api/json/0/employees/'+ id).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};
                 }else{
@@ -952,7 +952,7 @@
                 data += param + 'id=' + value;
                 first = false;
             }
-            AjaxService.send('get', 'rest/api/json/0/captions' + data).success(function(data){
+            AjaxService.send('get', 'api/json/0/captions' + data).success(function(data){
                 callback(data);
             }).error(function(){
                 if(callback){callback(false);}else{return false;}; 
@@ -1235,7 +1235,7 @@
         });
         
         // enable input autocomplete
-        $('input#inputTopic').autocomplete({url: restBase + 'rest/api/json/0/topics', dropdownBtn: '<a class="inputTopicAdd-drop"><i class="icon-fi-sort"></i></a>'});
+        $('input#inputTopic').autocomplete({url: restBase + 'api/json/0/topics', dropdownBtn: '<a class="inputTopicAdd-drop"><i class="icon-fi-sort"></i></a>'});
         
         // enable backToTop Button
         backToTopFn();
