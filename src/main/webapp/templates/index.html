@@ -6,7 +6,7 @@
 
         <div class="panel panel-bordered">
             <div class="panel-heading">
-                <b><i class="{{isList ? 'icon-fi-file-o' : 'icon-fi-time'}}"></i> {{isList ? topic.title : captions.last + ' ' + captions.entries | ucfirst}}:</b>
+                <b><i class="{{isList ? 'icon-fi-file-o' : 'icon-fi-time'}}"></i> {{documentTitle ? documentTitle : isList ? topic.title : captions.last + ' ' + captions.entries | ucfirst}}:</b>
             </div>
             <div class="panel-body">
                 <div class="row">
@@ -20,7 +20,7 @@
                     </div>
                     <div class="col-xs-6 nopaddingR">
                         <ul class="list-inline">
-                            <li><a href="#/add/{{isList?topic.title:'' | escape}}" class="pr-btn pr-btn-flat2 btn-with-icon-l"><i class="icon-fi-plus-circle"></i> {{captions.addText}}</a></li>
+                            <li><a href="#/add/{{ (documentLink ? 'link/' + documentLink : (isList ? topic.title : '')) | escape}}" class="pr-btn pr-btn-flat2 btn-with-icon-l"><i class="icon-fi-plus-circle"></i> {{captions.addText}}</a></li>
                         </ul>
                     </div>
                 </div>
@@ -37,7 +37,14 @@
                                         </ul>
                                     </div>
                                     <div class="_5prEntriesList-item-topic"><span ng-if="lEntry.inReplyTo" class="inReplyTo ns-underline" data-replyto-id="{{lEntry.inReplyTo}}"><b>@{{lEntry.inReplyToName}}</b></span> <span ng-if="!isList">{{captions.in}} <b><a href="#/list/{{lEntry.topic}}/entryId/{{lEntry.id}}" class="ns-underline">{{lEntry.topic}}</a></b></span></div>
-                                    <div class="_5prEntriesList-item-text"><p style="white-space: pre-wrap;">{{lEntry.text}}</p></div>
+                                    <div class="_5prEntriesList-item-text">
+                                        <p style="white-space: pre-wrap;">{{lEntry.text}}</p>
+                                        <div class="_5prEntriesList-item-links" ng-if="lEntry.links.length > 0">
+                                            <ul>
+                                                <li ng-repeat="lLink in lEntry.links"><a href="{{documentsUrl + lLink.href}}" target="_top"><span class="icon-fi-file-o"></span> {{lLink.title}}</a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
                                     <div class="row _5prEntriesList-item-bottom">
                                         <div class="_5prEntriesList-item-info col-xs-6"><ul class="list-inline"><li><i class="icon-fi-user" data-title="{{captions.user}}"></i> {{lEntry.lastModifiedByName}}</li> <li><i class="icon-fi-calendar" data-title="{{captions.date}}"></i> {{lEntry.lastModified | date:'HH:mm dd-MM-yyyy'}}</li> <li ng-show="lEntry.replies"><i class="icon-fi-comment-o" data-title="{{captions.replies}}"></i> {{lEntry.replies.length}}</li></ul></div>
                                         <div class="_5prEntriesList-item-actions col-xs-6 pull-right text-right"><ul class="list-inline"><li ng-show="lEntry.replies"><a class="item-actions-conversationDown" data-title="{{captions.conversationDown}}" ng-click="loadConversationDown($event, lEntry.id, lEntry)"><i class="icon-fi-comment-down"></i></a></li><li ng-show="lEntry.inReplyTo"><a class="item-actions-conversationUp" data-title="{{captions.conversationUp}}" ng-click="loadConversationUp($event, lEntry.id, lEntry)"><i class="icon-fi-comment-up"></i></a></li><li style="padding-right:0"><a ng-click="replyBtn($event, lEntry.id, lEntry.topic, lEntry.lastModifiedByName)" class="btn btn-warning btn-sm _5prEntriesList-item-replyBtn">{{captions.reply | ucfirst}}</a></li></ul></div>

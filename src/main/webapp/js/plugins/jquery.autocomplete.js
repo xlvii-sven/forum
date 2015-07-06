@@ -160,6 +160,8 @@
                         }else{
                             f._hide();   
                         }
+                        
+                        return true;
                     },
                     _sKeyPress: function(e){
                         switch(e.which){

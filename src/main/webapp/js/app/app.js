@@ -17,6 +17,7 @@
     var app = angular.module('forum', ['ngRoute', 'ngSanitize']);
     var Root = inIframe() ? '/projectile/apps/forum/' : '/forum/',
         restBase = inIframe() ? '/projectile/restapps/forum/' : '/forum/rest/',
+        documentsUrl = '/projectile/start#!/',
         _captions = {};
 
     /**
@@ -41,6 +42,11 @@
             controller:  'FirstPageController',
             resolve: {_zhType: function(){return "list";}}
         })
+        .when('/link/:documentLink', {
+            templateUrl: Root + 'templates/index.html', 
+            controller:  'FirstPageController',
+            resolve: {_zhType: function(){return "list";}}
+        })
         .when('/list/:topicTitle/entryId/:entryId', {
             templateUrl: Root + 'templates/index.html', 
             controller:  'FirstPageController',
@@ -52,6 +58,11 @@
             resolve: {_zhType: function(){return "new";}}
         })
         .when('/add/:topicTitle', {
+            templateUrl: Root + 'templates/add_page.html', 
+            controller:  'AddFormController',
+            resolve: {_zhType: function(){return "new";}}
+        })
+        .when('/add/link/:documentLink', {
             templateUrl: Root + 'templates/add_page.html', 
             controller:  'AddFormController',
             resolve: {_zhType: function(){return "new";}}
@@ -77,6 +88,7 @@
         //Application captions
         var captions = {
             Forum: "Default|Forum",
+            document: "Document|Document",
             last: "Tooltip|Last",
             search: "Tooltip|search",
             addText: "${Phrases:Add%20$0}:::${Document:Entry}",
@@ -154,7 +166,25 @@
                 
         ================ Controller ================
     */
-    app.controller('FirstPageController', function($scope, $http, $routeParams, TopicsService, EntriesService, OthersService, _zhType){
+    app.controller('FirstPageController', function($scope, $http, $routeParams, TopicsService, EntriesService, DocumentsService, OthersService, _zhType){
+        
+        if(_location.getParameter("link", true, true)){
+            $routeParams.documentLink = _location.getParameter("link", true, true);
+        }
+        
+        if($routeParams.documentLink){
+            $scope.documentLink = $routeParams.documentLink;
+            $scope.documentTitle = $scope.documentLink;
+            
+            DocumentsService.getName($scope.documentLink, function(data){
+                if(!data || !data.Entries){ return false }
+                
+                $scope.documentTitle = data.Entries[0]["translation"];
+                window.topicsDocumentFilter = $scope.documentLink;
+            });
+        }else{
+            $scope.documentLink = null   
+        }
         
         /**
          * Get the list of topics
@@ -167,7 +197,7 @@
             if(!data || !data.Entries){ return false }
             
             $scope.topics = data.Entries;
-        });
+        }, $scope.documentLink);
         
         var Entries_Assets = function(entries, callback){
             var Entries = (!entries ? $scope.entries : entries),
@@ -210,7 +240,26 @@
                         exec();
                     }, {key: key});
                 }
+                
+                /**
+                 * Transform and translate entry links 
+                 *
+                 * @propery val.links.
+                 */
+                for(var i = 0; i<val.links.length; i++){
+                    val.links[i] = {href: val.links[i], title: ''};
+                    
+                    (function(documentLink, linksKey, Entry){
+                        DocumentsService.getName(documentLink, function(data){
+                            if(!data || !data.Entries){ return false }
+
+                            Entry.links[linksKey].title = data.Entries[0]["translation"];
+                        });
+                    })(val.links[i].href, i, val);
+                }
             }
+            
+            $scope.documentsUrl = documentsUrl;
         }
         
         /**
@@ -252,7 +301,7 @@
                 });
             }
 
-        });
+        }, $scope.documentLink);
         
         /**
          * Item remove action
@@ -497,7 +546,14 @@
                                                         </ul>\
                                                     </div>\
                                                     <div class="_5prEntriesList-item-topic"></div>\
-                                                    <div class="_5prEntriesList-item-text"><p style="white-space: pre-wrap;">{{rEntry.text}}</p></div>\
+                                                    <div class="_5prEntriesList-item-text">\
+                                                        <p style="white-space: pre-wrap;">{{rEntry.text}}</p>\
+                                                        <div class="_5prEntriesList-item-links" ng-if="rEntry.links.length > 0">\
+                                                                                                    <ul>\
+                                                                                                        <li ng-repeat="rLink in rEntry.links"><a href="{{documentsUrl + rLink.href}}" target="_top"><span class="icon-fi-file-o"></span> {{rLink.title}}</a></li>\
+                                                                                                    </ul>\
+                                                                                                </div>\
+                                                    </div>\
                                                     <div class="row _5prEntriesList-item-bottom">\
                                                         <div class="_5prEntriesList-item-info col-xs-6"><ul class="list-inline"><li><i class="icon-fi-user" data-title="{{captions.user}}"></i> {{rEntry.lastModifiedByName}}</li> <li><i class="icon-fi-calendar" data-title="{{captions.date}}"></i> {{rEntry.lastModified | date:\'HH:mm dd-MM-yyyy\'}}</li> <li ng-show="rEntry.replies"><i class="icon-fi-comment-o" data-title="{{captions.replies}}"></i> {{rEntry.replies.length}}</li></ul></div>\
                                                         <div class="_5prEntriesList-item-actions col-xs-6 pull-right text-right"><ul class="list-inline"><li ng-show="rEntry.replies"><a class="item-actions-conversationDown" data-title="{{captions.conversationDown}}" ng-click="loadConversationDown($event, rEntry.id, rEntry)"><i class="icon-fi-comment-down"></i></a></li><li style="padding-right:0"><a ng-click="replyBtn($event, rEntry.id, rEntry.topic, rEntry.lastModifiedByName)" class="btn btn-warning btn-sm _5prEntriesList-item-replyBtn">{{captions.reply | ucfirst}}</a></li></ul></div>\
@@ -520,6 +576,23 @@
                     EntriesService.get(val, function(data){
                         
                         if(data && data.Entries && data.Entries[0]){
+                            /**
+                             * Transform and translate entry links 
+                             *
+                             * @propery val.links.
+                             */
+                            for(var i = 0; i<data.Entries[0].links.length; i++){
+                                data.Entries[0].links[i] = {href: data.Entries[0].links[i], title: ''};
+
+                                (function(documentLink, linksKey, Entry){
+                                    DocumentsService.getName(documentLink, function(data){
+                                        if(!data || !data.Entries){ return false }
+
+                                        Entry.links[linksKey].title = data.Entries[0]["translation"];
+                                    });
+                                })(data.Entries[0].links[i].href, i, data.Entries[0]);
+                            }
+                            
                             opts.conversation.push(data.Entries[0]);   
                         }
                         
@@ -565,7 +638,14 @@
                                                 </ul>\
                                             </div>\
                                             <div class="_5prEntriesList-item-topic"></div>\
-                                            <div class="_5prEntriesList-item-text"><p style="white-space: pre-wrap;">{{rEntry.text}}</p></div>\
+                                            <div class="_5prEntriesList-item-text">\
+                                                <p style="white-space: pre-wrap;">{{rEntry.text}}</p>\
+                                                <div class="_5prEntriesList-item-links" ng-if="rEntry.links.length > 0">\
+                                                                                            <ul>\
+                                                                                                <li ng-repeat="rLink in rEntry.links"><a href="{{documentsUrl + rLink.href}}" target="_top"><span class="icon-fi-file-o"></span> {{rLink.title}}</a></li>\
+                                                                                            </ul>\
+                                                                                        </div>\
+                                            </div>\
                                             <div class="row _5prEntriesList-item-bottom">\
                                                 <div class="_5prEntriesList-item-info col-xs-6"><ul class="list-inline"><li><i class="icon-fi-user" data-title="{{captions.user}}"></i> {{rEntry.lastModifiedByName}}</li> <li><i class="icon-fi-calendar" data-title="{{captions.date}}"></i> {{rEntry.lastModified | date:\'HH:mm dd-MM-yyyy\'}}</li> <li ng-show="rEntry.replies"><i class="icon-fi-comment-o" data-title="{{captions.replies}}"></i> {{rEntry.replies.length}}</li></ul></div>\
                                                 <div class="_5prEntriesList-item-actions col-xs-6 pull-right text-right"><ul class="list-inline"><li ng-show="rEntry.replies"><a class="item-actions-conversationDown" data-title="{{captions.conversationDown}}" ng-click="loadConversationDown($event, rEntry.id, rEntry)"><i class="icon-fi-comment-down"></i></a></li><li style="padding-right:0"><a ng-click="replyBtn($event, rEntry.id, rEntry.topic, rEntry.lastModifiedByName)" class="btn btn-warning btn-sm _5prEntriesList-item-replyBtn">{{captions.reply | ucfirst}}</a></li></ul></div>\
@@ -614,7 +694,29 @@
          
         ================ Controller ================
     */
-    app.controller('AddFormController', function($scope, $http, $routeParams, TopicsService, EntriesService, OthersService, _zhType){
+    app.controller('AddFormController', function($scope, $http, $routeParams, TopicsService, EntriesService, DocumentsService, OthersService, _zhType){
+        
+        /**
+         * If is isseted the document link in url
+         *
+         * @propery documentLink
+         */
+        if(_location.getParameter("link", true, true)){
+            $routeParams.documentLink = _location.getParameter("link", true, true);
+        }
+        
+        if($routeParams.documentLink){
+            $scope.documentLink = $routeParams.documentLink;
+            $scope.documentTitle = $scope.documentLink;
+            
+            DocumentsService.getName($scope.documentLink, function(data){
+                if(!data || !data.Entries){ return false }
+                
+                $scope.documentTitle = data.Entries[0]["translation"];
+            });
+            
+            window.topicsDocumentFilter = $scope.documentLink;
+        }
         
         /**
          * Get the list of topics
@@ -627,7 +729,7 @@
             if(!data || !data.Entries){ return false }
             
             $scope.topics = data.Entries;
-        });
+        }, $scope.documentLink);
         
         /**
          * If is isseted the topic title in url
@@ -665,6 +767,8 @@
                 topic: $scope.post_topic,
                 text: $scope.post_text,
             }
+            
+            if($scope.documentLink) data.links = [$scope.documentLink];
             
             /**
              * Check what kind of request is it
@@ -766,8 +870,8 @@
      * @method update {function}
      */
     app.service('TopicsService', function($http, AjaxService){
-        this.list = function(callback){
-            AjaxService.send('get', 'api/json/0/topics').success(function(r){
+        this.list = function(callback, filter){
+            AjaxService.send('get', 'api/json/0/topics' + (filter != null ? '?link=' + filter : '')).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};
                 }else{
@@ -828,8 +932,8 @@
      * @method conversation {function}
      */
     app.service('EntriesService', function($http, AjaxService){
-        this.list = function(id, callback){
-            AjaxService.send('get', 'api/json/0/forumentries' + (id != null ? '?topic='+ id : '' )).success(function(r){
+        this.list = function(id, callback, filter){
+            AjaxService.send('get', 'api/json/0/forumentries' + (id != null ? '?topic='+ id : '') + (filter != null ? (id==null ? '?' : '&') + 'link=' + filter : '')).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};
                 }else{
@@ -956,6 +1060,22 @@
                 callback(data);
             }).error(function(){
                 if(callback){callback(false);}else{return false;}; 
+            });
+        }
+    });
+    
+    /**
+     * The service of documents
+     *
+     * @service DocumentsService
+     * @method getName {function}
+     */
+    app.service('DocumentsService', function($http, AjaxService){
+        this.getName = function(link, callback){
+            AjaxService.send('get', 'api/json/0/captions/$link|' + encodeURIComponent(link)).success(function(data){
+                callback(data);
+            }).error(function(){
+                if(callback){callback(false);}else{return false;};
             });
         }
     });
@@ -1117,8 +1237,8 @@
         addParameter: function(key, value, sourceURL){
             var sourceURL = (sourceURL ? sourceURL : location.href),
                 separator = (sourceURL.indexOf('?') > -1 ? "&" : "?");
-            if(f._location.getParameter(key)){
-                sourceURL = f._location.removeParameter(key)
+            if(_location.getParameter(key)){
+                sourceURL = _location.removeParameter(key)
             }
             return sourceURL + separator + key + "=" + value;
         },
@@ -1140,12 +1260,12 @@
             }
             return rtn;
         },
-        getParameter: function(name, hash){
+        getParameter: function(name, hash, top){
             if(!name){ return; }
             name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
             var regexS = "[\\?&\/]"+name+"[=\/]([^&#]*)",
                 regex = new RegExp( regexS ),
-                results = regex.exec( (!hash ? location.href : location.hash) );
+                results = regex.exec( (!hash ? (top ? window.top.location.href : location.href) : (top ? window.top.location.hash : location.hash)) );
             if( results == null )
                 return false;
             else
@@ -1235,7 +1355,7 @@
         });
         
         // enable input autocomplete
-        $('input#inputTopic').autocomplete({url: restBase + 'api/json/0/topics', dropdownBtn: '<a class="inputTopicAdd-drop"><i class="icon-fi-sort"></i></a>'});
+        $('input#inputTopic').autocomplete({url: restBase + 'api/json/0/topics' + (window.topicsDocumentFilter ? '?link=' + window.topicsDocumentFilter : ''), dropdownBtn: '<a class="inputTopicAdd-drop"><i class="icon-fi-sort"></i></a>'});
         
         // enable backToTop Button
         backToTopFn();
@@ -1247,5 +1367,12 @@
         //remove tipsy {Bug}
         $(".tipsy").remove();
     }
+    
+    $('html').on('click', '#home_icon_target', function(e){
+        e.preventDefault();
+        window.location.href = '/projectile/apps/forum';
+        window.top.Ext.History.add('#!/app!forum');
+    });
+    
     //if(!inIframe()){window.location = 'http://google.com'}
 })();

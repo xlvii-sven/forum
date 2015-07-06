@@ -17,6 +17,12 @@
                                 <input type="text" class="form-control" id="inputTopic" ng-model="post_topic" placeholder="{{captions.addTopicInput}}" required>
                             </div>
                         </div>
+                        <div class="form-group row" ng-if="documentLink" ng-class="{'hidden': isEditMode}">
+                            <label style="display:block">{{captions.document}}:</label>
+                            <div class="col-xs-6 nopadding">
+                                <input type="text" class="form-control" disabled readonly value="{{documentTitle}}">
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label for="inputText">{{captions.text}}:</label>
                             <textarea class="form-control _4aS" id="inputText" ng-model="post_text" rows="5" required></textarea> 
