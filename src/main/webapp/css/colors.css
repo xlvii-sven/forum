@@ -1,0 +1,73 @@
+/*
+    Default:
+    1. #545454 - text
+    2. #999999 - soft text
+    3. #8abd44 - buttons
+    4. #e35549 - addons
+    5. #a8a8a8 - soft addons
+    6. #f7f8fa - background
+    7. #2a76db - links
+*/
+body {
+    background: #f7f8fa;
+    color: #545454;
+}
+
+/* Color text 1 */
+.color-text-1 {
+    color: #545454;
+}
+
+/* Color text 2 */
+.color-text-2 {
+    color: #999999;
+}
+
+a.color-text-2 {
+    color: #999999;
+}
+
+a.color-text-2:hover {
+    color: #545454;
+    cursor: pointer;
+}
+
+/* Color text 3 */
+.color-text-3,
+.color-text-3:focus {
+    color: #8abd44;
+}
+
+a.color-text-3:hover {
+    color: #7bab44;
+}
+
+.color-text-3.btn-custom-3,
+.color-text-3.btn-custom-3:focus {
+    background-color: #8abd44;
+    color: #fff;
+}
+
+.color-text-3.btn-custom-3:hover {
+    background-color: #7bab44;
+    color: #fff;
+}
+
+.block-bordered-color-3 {
+    border-color: #8abd44;
+}
+
+/* Color text 4 */
+.color-text-4 {
+    color: #e35549;
+}
+
+/* Color text 5 */
+.color-text-5 {
+    color: #a8a8a8;
+}
+
+/* Color text 6 */
+.color-text-6 {
+    color: #f7f8fa;
+}

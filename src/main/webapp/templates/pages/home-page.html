@@ -1,0 +1,214 @@
+<!-- Header -->
+<div id="header">
+    <div class="container-fluid header-fixed">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-xs-4 header-logo">
+                    <h3 class="mt0 mb0"><a href="#/" id="home_icon_target" class="color-text-3">{{captions.Forum}}</a></h3>
+                </div>
+                
+                <div class="col-xs-4 header-search">
+                    <div class="form-group">
+                        <i class="fa fa-search"></i>
+                        <input type="text" placeholder="{{captions.search | ucfirst}}..." class="form-control color-text-2" ng-model="searchInput">
+                    </div>
+                </div>
+                
+                <div class="col-xs-4 header-menu text-right">
+                    <a class="btn btn-custom-3 color-text-3" ng-click="add_entry($event)"><i class="fa fa-plus"></i> {{captions.addText}}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Content -->
+<div id="content" class="container-fluid mt40">
+    <div class="row">
+        
+        <!-- Left Side -->
+        <div class="col-xs-4 content-left-side">
+            <div class="panel panel-bordered">
+                <div class="panel-heading">
+                    <h4 class="mt0 mb0">{{captions.topics}}</h4>
+                </div>
+                <div class="panel-body">
+                    
+                    <!-- topics sort -->
+                    <div class="content-left-side-sort">
+                        <ul class="list-inline">
+                            <li>{{captions.sortBy | ucfirst}}:</li>
+                            <li><a ng-click="leftSide.sortTopics.by = '-title'; leftSide.sortTopics.button = 1; leftSide.sortTopics.reverse = !leftSide.sortTopics.reverse"><i class="fa" ng-class="leftSide.sortTopics.button==1 && leftSide.sortTopics.reverse ? 'fa-arrow-up' : 'fa-arrow-down'"></i> {{captions.name}}</a></li>
+                            <li><a ng-click="leftSide.sortTopics.by = '-lastModified'; leftSide.sortTopics.button = 2; leftSide.sortTopics.reverse = !leftSide.sortTopics.reverse"><i class="fa" ng-class="leftSide.sortTopics.button==2 && leftSide.sortTopics.reverse ? 'fa-arrow-up' : 'fa-arrow-down'"></i> {{captions.date}}</a></li>
+                            <li><a ng-click="leftSide.sortTopics.by = '-size'; leftSide.sortTopics.button = 3; leftSide.sortTopics.reverse = !leftSide.sortTopics.reverse"><i class="fa" ng-class="leftSide.sortTopics.button==3 && leftSide.sortTopics.reverse ? 'fa-arrow-up' : 'fa-arrow-down'"></i> {{captions.size}}</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Topics List -->
+                    <div class="content-left-side-list">
+                        <ul>
+                            <li class="topics-item" ng-repeat="topic in Topics | filter: searchInput | orderBy:leftSide.sortTopics.by:leftSide.sortTopics.reverse" ng-click="open_topic($event, '#/list/' + topic.title, $index)">
+                                <div class="row">
+                                    <div class="pull-left pr0 pl0"><i class="fa fa-folder-open icon icon-color-1"></i></div>
+                                    <div class="col-xs-11 pr0 pl0">
+                                        <div class="title"><b>{{topic.title}}</b></div>
+                                        <div class="small-text"><p class="mb0">{{topic.lastEntryText | limitTo: 55}}...</p></div>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Side -->
+        <div class="col-xs-8 content-right-side">
+            
+            <!--post form -->
+            <div id="entry-form" class="panel panel-bordered" ng-show="rightSide.showForm">
+                <div class="panel-heading">
+                    <h4 class="mt0 mb0">{{rightSide.formTitle}}</h4>
+                </div>
+                <div class="panel-body">
+                    <div class="entry-item">
+                        <div class="pull-left pr0 pl0 icon">
+                            <img ng-src="{{rightSide.user.image}}">
+                        </div>
+                        <div class="col-xs-11 pr0">
+                            <form ng-submit="form_post_entry()">
+                                <div class="form-group row">
+                                    <div class="inputTopicAdd col-xs-6 pl0 pr0">
+                                        <input type="text" class="form-control" id="inputTopic" ng-model="post_topic" placeholder="{{captions.addTopicInput}}" required>
+                                    </div>
+                                </div>
+                                <div class="form-group row" ng-if="document_link.href">
+                                    <div class="col-xs-6 pl0 pr0">
+                                        <input type="text" placeholder="{{captions.document}}" class="form-control" disabled readonly value="{{document_link.title}}">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <textarea class="form-control _4aS" id="inputText" placeholder="{{captions.text}}" ng-model="post_text" rows="5" required></textarea> 
+                                </div>
+                                <div class="row">
+                                    <a href="#" class="pull-left color-text-2" style="font-size:12px; margin-top:5px;" ng-click="add_entry_close($event)"><i class="fa fa-times-circle"></i> {{captions.cancel}}</a>
+                                    <button type="submit" class="btn btn-warning btn-sm pull-right"><i class="fa fa-paper-plane"></i> {{captions.submit}}</button>
+                                    <a ng-if="mode == 'edit' && Entries[0]" ng-click="remove_entry($event, Entries[0].id, 0)" class="color-text-2 pull-left" style="font-size:12px; margin-top:5px; margin-left: 15px"><i class="fa fa-times"></i> {{captions.remove}}</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- title -->
+            <div class="panel panel-bordered panel-heading-only" ng-if="rightSide.title">
+                <div class="panel-heading">
+                    <h4 class="mt0 mb0">{{rightSide.title}}</h4>
+                </div>
+            </div>
+            
+            <!-- Entries List -->
+            <div class="content-right-side-list panel panel-bordered panel-body-only" ng-if="rightSide.showList">
+                <ul class="panel-body">
+                    
+                    <!-- Entry -->
+                    <li id="entry-{{entry.id}}" class="entry-item" ng-repeat="(index, entry) in Entries | filter: searchInput | orderBy:'-lastModified'" m-repeat-directive>
+                        <div class="row">
+                            <div class="pull-left pr0 pl0 icon">
+                                <img ng-src="{{entry.lastModifiedByImageURL}}">
+                            </div>
+                            <div class="col-xs-11 pr0">
+                                <div class="entry-item-menu"><ul class="list-inline"><li><a href="#/entry/{{entry.id}}/edit" class="color-text-2" data-title="{{captions.edit}}"><i class="fa fa-pencil-square-o"></i></a></li><li><a class="color-text-2" data-title="{{captions.remove}}" ng-click="remove_entry($event, entry.id, Entries.length-1-index)"><i class="fa fa-times"></i></a></li></ul></div>
+                                <div class="user-name"><h5><b>{{entry.lastModifiedByName}}</b> &#8212; {{captions.in}} <a href="#/list/{{entry.topic | escape}}" class="ns-underline">{{entry.topic}}</a></h5></div>
+                                <div class="text"><p ng-bind-html="entry.text"></p></div>
+                                <div class="documents" ng-if="entry.links.length > 0">
+                                    <ul>
+                                        <li ng-repeat="link in entry.links"><a ng-click="open_document(link.href)" class="ns-underline" target="_top"><i class="fa fa-external-link"></i> {{link.title}}</a></li>
+                                    </ul>
+                                </div>
+                                <div class="footer row">
+                                    <div class="pull-left">
+                                        <a href="#" class="ns-underline" ng-click="like_entry($event, entry, Entries.length-1-index)">{{!entry.liked ? captions.like : captions.unlike}}</a>
+                                         · 
+                                        <a href="#" class="ns-underline" ng-click="comment_entry($event, entry, null, Entries.length-1-index)">{{captions.comment | ucfirst}}</a>
+                                         · 
+                                        <a href="#/entry/{{entry.id}}" class="ns-underline">{{entry.lastModified | date:'dd.MM.yyyy HH:mm'}}</a>
+                                    </div>
+                                    <div class="pull-right">
+                                        <ul class="list-inline">
+                                            <li><a class="footer-likes" ng-click="like_entry($event, entry, Entries.length-1-index)" ng-class="{'active': entry.liked}"><i class="fa fa-heart-o"></i> {{entry.likes}} {{captions.likes}}</a></li>
+                                            <li><a class="footer-comments" ng-click="comment_entry($event, entry, null, Entries.length-1-index)"><i class="fa fa-comment-o"></i> {{entry.comments.length}} {{captions.comments}}</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <!-- entry comments -->
+                                <div class="entry-comments row" ng-class="{'hidden': entry.comments.length == 0 && !rightSide.forceCommentsShow}">
+                                    <hr>
+
+                                    <div class="comments-previous-button" ng-if="entry.comments.length > rightSide.entryCommentsLimit && !rightSide.forceCommentsShow">
+                                        <a href="#" ng-click="showAllComments($event, entry.id)"><i class="fa fa-comments-o"></i> {{captions.viewPrevComments}} <span class="loader pull-right"></span></a>
+                                    </div>
+                                    
+                                    <ul>
+                                        <li id="entry-{{comment.id}}" class="comment-entry-item" ng-repeat="(key, comment) in entry.comments" ng-class="{'hidden': entry.comments.length - key > rightSide.entryCommentsLimit && !rightSide.forceCommentsShow}" m-repeat-directive>
+                                            <div class="row">
+                                                <div class="pull-left pr0 pl0 icon">
+                                                    <img ng-src="{{comment.lastModifiedByImageURL}}">
+                                                </div>
+                                                <div class="col-xs-11 pr0">
+                                                    <div class="entry-item-menu"><ul class="list-inline"><li><a href="#/entry/{{comment.id}}/edit" class="color-text-2" data-title="{{captions.edit}}"><i class="fa fa-pencil-square-o"></i></a></li><li><a class="color-text-2" data-title="{{captions.remove}}" ng-click="remove_entry($event, comment.id, key, Entries.length-1-index)"><i class="fa fa-times"></i></a></li></ul></div>
+                                                    <div class="user-name"><h5><b>{{comment.lastModifiedByName}}</b></h5></div>
+                                                    <div class="text"><p ng-bind-html="comment.text"></p></div>
+                                                    <div class="documents" ng-if="entry.links.length > 0">
+                                                        <ul>
+                                                            <li ng-repeat="link in comment.links"><a ng-click="open_document(link.href)" class="ns-underline"><i class="fa fa-external-link"></i> {{link.title}}</a></li>
+                                                        </ul>
+                                                    </div>
+                                                    <div class="footer row">
+                                                        <div class="pull-left">
+                                                            <a class="footer-likes" ng-click="like_entry($event, comment, key, Entries.length-1-index)" ng-class="{'active': comment.liked}">{{captions.like}} ({{comment.likes}})</a>
+                                                             · 
+                                                            <a href="#" class="ns-underline" ng-click="comment_entry($event, entry, comment, Entries.length-1-index)">{{captions.comment | ucfirst}}</a>
+                                                             · 
+                                                            <a href="#/entry/{{entry.id}}" class="ns-underline">{{comment.lastModified | date:'dd.MM.yyyy HH:mm'}}</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                    
+                                    <!-- entry comment form -->
+                                    <div class="comments-post-form">
+                                        <div class="row">
+                                            <div class="pull-left pr0 pl0 icon">
+                                                <img ng-src="{{rightSide.user.image}}">
+                                            </div>
+                                            <div class="col-xs-11 pr0">
+                                                <form ng-submit="form_post_entry(entry.id, Entries.length-1-index)">
+                                                    <textarea class="_4aS" placeholder="{{captions.comment | ucfirst}}" data-height="34px" ng-model="rightSide.post_text[entry.id]"></textarea>
+                                                    <div class="comment-post-form-helpers">
+                                                        <div class="row">
+                                                            <div class="col-xs-12 text-right">
+                                                                <button type="submit" class="btn btn-warning"><i class="fa fa-comment"></i> {{captions.comment | ucfirst}}</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+        </div>
+        
+    </div>
+</div>
