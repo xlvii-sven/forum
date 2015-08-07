@@ -2,7 +2,7 @@
  * Forum | Application
  * Copyright (c) 2015 Infodesire
  * Website: http://infodesire.com/
- * Version: 0.0.6 (06-Aug-2015)
+ * Version: 0.0.7 (06-Aug-2015)
  * Requires: AngularJS 1.3 or later, jQuery v1.7.1 or later 
  */
 (function(){
@@ -19,6 +19,8 @@
     var Root = '/projectile/apps/forum/',
         restBase = '/projectile/restapps/forum/',
         documentsUrl = '/projectile/start#!/',
+        bsm = window.top ? window.top.bsm : window.bsm,
+        clientId = bsm ? bsm.clientId : '0',
         _captions = {};
 
     /**
@@ -721,7 +723,7 @@
      */
     app.service('TopicsService', function($http, AjaxService){
         this.list = function(callback, filter){
-            AjaxService.send('get', 'api/json/0/topics' + (filter != null ? '?link=' + filter : '')).success(function(r){
+            AjaxService.send('get', 'api/json/' + clientId + '/topics' + (filter != null ? '?link=' + filter : '')).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};
                 }else{
@@ -733,7 +735,7 @@
         }
         
         this.get = function(id, callback, opts){
-            AjaxService.send('get', 'api/json/0/topics/' + id).success(function(r) {
+            AjaxService.send('get', 'api/json/' + clientId + '/topics/' + id).success(function(r) {
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r, (opts ? opts : null));}else{return true;};
                 }else{
@@ -745,7 +747,7 @@
         }
         
         this.find = function(d, callback){
-            AjaxService.send('get', 'api/json/0/topics?title=' + d).success(function(r) {
+            AjaxService.send('get', 'api/json/' + clientId + '/topics?title=' + d).success(function(r) {
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};   
                 }else{
@@ -757,7 +759,7 @@
         }
         
         this.update = function(id, data, callback){
-            AjaxService.send('put',  'api/json/0/topics/' + id, data).success(function(r){
+            AjaxService.send('put',  'api/json/' + clientId + '/topics/' + id, data).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};
                 }else{
@@ -785,7 +787,7 @@
      */
     app.service('EntriesService', function($http, AjaxService, DocumentsService, OthersService){
         this.list = function(id, callback, filter){
-            AjaxService.send('get', 'api/json/0/forumentries' + (id != null ? '?topic='+ id : '') + (filter != null ? (id==null ? '?' : '&') + 'link=' + filter : '')).success(function(r){
+            AjaxService.send('get', 'api/json/' + clientId + '/forumentries' + (id != null ? '?topic='+ id : '') + (filter != null ? (id==null ? '?' : '&') + 'link=' + filter : '')).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};
                 }else{
@@ -797,7 +799,7 @@
         }
         
         this.get = function(id, callback, opts){
-            AjaxService.send('get', 'api/json/0/forumentries/' + id).success(function(r){
+            AjaxService.send('get', 'api/json/' + clientId + '/forumentries/' + id).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r,(opts ? opts : null));}else{return true;};
                 }else{
@@ -809,7 +811,7 @@
         }
         
         this.create = function(data, callback){
-            AjaxService.send('post', 'api/json/0/forumentries', data).success(function(r){
+            AjaxService.send('post', 'api/json/' + clientId + '/forumentries', data).success(function(r){
                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};
                 }else{
@@ -822,7 +824,7 @@
         }
         
         this.update = function(id, data, callback){
-            AjaxService.send('put',  'api/json/0/forumentries/' + id, data).success(function(r){
+            AjaxService.send('put',  'api/json/' + clientId + '/forumentries/' + id, data).success(function(r){
                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;}
                 }else{
@@ -835,7 +837,7 @@
         }
         
         this.delete = function(id, callback){
-            AjaxService.send('delete', 'api/json/0/forumentries/' + id).success(function(r){
+            AjaxService.send('delete', 'api/json/' + clientId + '/forumentries/' + id).success(function(r){
                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};
                 }else{
@@ -848,7 +850,7 @@
         }
         
         this.like = function(id, data, callback, opts){
-            AjaxService.send('put', 'api/json/0/likes/^.|Forum|ForumEntry|1|' + id, data).success(function(r){
+            AjaxService.send('put', 'api/json/' + clientId + '/likes/^.|Forum|ForumEntry|1|' + id, data).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r,(opts ? opts : null));}else{return true;};
                 }else{
@@ -860,7 +862,7 @@
         }
         
         this.likes = function(id, callback, opts){
-            AjaxService.send('get', 'api/json/0/likes/^.|Forum|ForumEntry|1|' + id).success(function(r){
+            AjaxService.send('get', 'api/json/' + clientId + '/likes/^.|Forum|ForumEntry|1|' + id).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r,(opts ? opts : null));}else{return true;};
                 }else{
@@ -872,7 +874,7 @@
         }
         
         this.replies = function(id, callback, opts){
-            AjaxService.send('get', 'api/json/0/forumentries' + (id != null ? '?inReplyTo='+ id : '' )).success(function(r){
+            AjaxService.send('get', 'api/json/' + clientId + '/forumentries' + (id != null ? '?inReplyTo='+ id : '' )).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r, (opts ? opts : null));}else{return true;};
                 }else{
@@ -960,7 +962,7 @@
      */
     app.service('UsersService', function($http, AjaxService){
         this.get = function(id, callback){
-            AjaxService.send('get', 'api/json/0/employees/'+ id).success(function(r){
+            AjaxService.send('get', 'api/json/' + clientId + '/employees/'+ id).success(function(r){
                 if(r.StatusCode && r.StatusCode.CodeNumber == 0){
                     if(callback){callback(r);}else{return true;};
                 }else{
@@ -988,7 +990,7 @@
                 data += param + 'id=' + value;
                 first = false;
             }
-            AjaxService.send('get', 'api/json/0/captions' + data).success(function(data){
+            AjaxService.send('get', 'api/json/' + clientId + '/captions' + data).success(function(data){
                 callback(data);
             }).error(function(){
                 if(callback){callback(false);}else{return false;}; 
@@ -1004,7 +1006,7 @@
      */
     app.service('DocumentsService', function($http, AjaxService){
         this.getName = function(link, callback){
-            AjaxService.send('get', 'api/json/0/captions/$link|' + encodeURIComponent(link)).success(function(data){
+            AjaxService.send('get', 'api/json/' + clientId + '/captions/$link|' + encodeURIComponent(link)).success(function(data){
                 callback(data);
             }).error(function(){
                 if(callback){callback(false);}else{return false;};
@@ -1239,7 +1241,7 @@
         
         setTimeout(function(){
             // enable input autocomplete
-            $('input#inputTopic').autocomplete({url: restBase + 'api/json/0/topics' + (window.topicsDocumentFilter ? '?link=' + window.topicsDocumentFilter : ''), dropdownBtn: '<a class="inputTopicAdd-drop"><i class="fa fa-sort"></i></a>'});
+            $('input#inputTopic').autocomplete({url: restBase + 'api/json/' + clientId + '/topics' + (window.topicsDocumentFilter ? '?link=' + window.topicsDocumentFilter : ''), dropdownBtn: '<a class="inputTopicAdd-drop"><i class="fa fa-sort"></i></a>'});
         }, 100);
         
         //remove tipsy {Bug}
