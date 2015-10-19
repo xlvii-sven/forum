@@ -2,7 +2,7 @@
  * Forum | Application
  * Copyright (c) 2015 Infodesire
  * Website: http://infodesire.com/
- * Version: 0.0.7 (06-Aug-2015)
+ * Version: 0.0.8 (07-Oct-2015)
  * Requires: AngularJS 1.3 or later, jQuery v1.7.1 or later 
  */
 (function(){
@@ -15,8 +15,8 @@
      * @_captions {Object} Object of all captions 
      * @static
      */
-    var app = angular.module('forum', ['ngRoute', 'ngSanitize']);
-    var Root = '/projectile/apps/forum/',
+    var app = angular.module('forum', ['ngRoute', 'ngSanitize', 'infinite-scroll']),
+        Root = '/projectile/apps/forum/',
         restBase = '/projectile/restapps/forum/',
         documentsUrl = '/projectile/start#!/',
         bsm = window.top ? window.top.bsm : window.bsm,
@@ -27,7 +27,7 @@
      * AnugularJS | Application Routing
      *
      * @/ {String} Home
-     * @/list/:topicTitle {String} Get entries by topic
+     * @/list/:topicId {String} Get entries by topic
      * @/add {String} Home with opened add form
      * @/edit/:entryId {String} Get entry by id
      * @/edit/:entryId/edit {String} Edit entry by id
@@ -39,7 +39,12 @@
             controller: 'FirstPageController',
             resolve: {_zhType: function(){return false;}}
     	})
-        .when('/list/:topicTitle', {
+        .when('/list/:topicId', {
+            templateUrl: Root + 'templates/pages/home-page.html', 
+            controller:  'FirstPageController',
+            resolve: {_zhType: function(){return "list";}}
+        })
+        .when('/link/:document_link', {
             templateUrl: Root + 'templates/pages/home-page.html', 
             controller:  'FirstPageController',
             resolve: {_zhType: function(){return "list";}}
@@ -48,6 +53,11 @@
             templateUrl: Root + 'templates/pages/home-page.html', 
             controller: 'FirstPageController',
             resolve: {_zhType: function(){return "add";}}
+    	})
+        .when('/search/:search_keyword', {
+            templateUrl: Root + 'templates/pages/home-page.html', 
+            controller: 'FirstPageController',
+            resolve: {_zhType: function(){return "search";}}
     	})
         .when('/entry/:entryId', {
             templateUrl: Root + 'templates/pages/home-page.html', 
@@ -113,7 +123,9 @@
             edit: "Tooltip|Edit",
             editText: "Default|${Phrases:change $0}:::${Document:Entry}",
             remove: "Document|Remove",
-            viewPrevComments: "Forum|Show previous comments"
+            viewPrevComments: "Forum|Show previous comments",
+            pasteDocument: "Tooltip|Paste document",
+            detach: "System|Remove"
         };
         
         $scope.captions = {};
@@ -127,7 +139,7 @@
          * @method get
          */
         CaptionsService.get(captions, function(data){
-            if(!data||!data.Entries){ return false }
+            if(!data) return false;
             
             var i = 0;
             for(key in captions){
@@ -179,7 +191,15 @@
             showForm: false, // show add form
             formTitle: _setRightSideCaption('formTitle', '$scope.captions.addText'), // add form title text
             entryCommentsLimit: 3, // entry comments limit
+            pagination: {
+                disabled: true,
+                busy: false,
+                scrollPosition: 0,
+                page: 0,
+                scrollTop: 0
+            },
             forceCommentsShow: false, // show all entry comments without limit
+            post_links: {form: []}, //post documents links
             post_text: {}, // !important for ng-model
             user: {
                 image: '/projectile/startFile?f=$AVA_mine'
@@ -193,9 +213,11 @@
          *
          * If you have a topic in url, it will select itself automatic
          */
-        if($routeParams.topicTitle){
-            $scope.Topic = {title: $routeParams.topicTitle};
-            $scope.post_topic = $scope.Topic.title
+        if($routeParams.topicId){
+            $scope.Topic = {
+                id: $routeParams.topicId,
+                title: ''
+            };
             
             /**
              * Get the list of topics
@@ -205,10 +227,15 @@
              * @service TopicsService
              * @method find
              */
-            TopicsService.find($routeParams.topicTitle, function(data){
-                if(!data || !data.Entries){ return false }
+            TopicsService.get($routeParams.topicId, function(data){
+                if(!data) return false;
 
-                $scope.Topic = data.Entries[0];
+                $scope.Topic.id = data.Entries[0].id;
+                $scope.Topic.title = data.Entries[0].title;
+                $scope.Topic.link = data.Entries[0].link;
+                TopicsService.getTopicDescription($scope.Topic, function(){
+                    _setRightSideCaption("title", "$filter('ucfirst')($scope.Topic.description)");
+                });
             });
         }
         
@@ -241,13 +268,22 @@
             document_link.href = _location.getParameter("link", true, true);
             
             DocumentsService.getName(document_link.href, function(data){
-                if(!data || !data.Entries){ return false }
+                if(!data) return false;
                 
                 if($scope.mode == 'home') $scope.rightSide.title = document_link.title = data.Entries[0]["translation"];
                 window.topicsDocumentFilter = document_link.href;
             });
-            
-            $scope.document_link = document_link;
+        }
+        
+        $scope.document_link = document_link;
+        
+        /**
+         * Get search keyword from url
+         *
+         * If you have a search keyword in url, it will select itself automatic
+         */
+        if($routeParams.search_keyword){
+            $scope.searchInput = $routeParams.search_keyword;
         }
         
         
@@ -260,64 +296,99 @@
          * @method list
          */
         TopicsService.list(function(data){
-            if(!data || !data.Entries) return false;
+            if(!data) return false;
             
             $scope.Topics = data.Entries;
-        }, document_link.href);
-        
-        /**
-         * Get one or a list of entries
-         *
-         * @param callback {Function}
-         * @service EntriesService
-         * @method list, get
-         */
-        if($scope.mode == 'home' || $scope.mode == 'view' || $scope.mode == 'edit'){
-            var fn = 'list',
-                param = null,
-                param2 = null;
             
-            switch($scope.mode){
-                case 'home':
-                    fn = 'list';
-                    param = _zhType == "list" ? $routeParams.topicTitle: null;
-                break;
-                case 'view':
-                    fn = 'get';
-                    param = $routeParams.entryId;
-                    param2 = true;
-                break;
-                case 'edit':
-                    fn = 'get';
-                    param = $routeParams.entryId;
-                    param2 = false;
-                break;
+            for(var key in $scope.Topics){
+                TopicsService.getTopicDescription($scope.Topics[key]);
             }
             
             /**
-             * Get one or a list of forum entries
+             * Get one or a list of entries
              *
-             * @param param {Null, String} null, topic title, entry id
              * @param callback {Function}
-             * @param document_link {String}
              * @service EntriesService
-             * @method fn {String} list, get
+             * @method list, get
              */
-            EntriesService[fn](param, function(data){
-                if(!data || !data.Entries) return $scope.mode == 'home' ? false : location.href = '#/';
-
-                $scope.Entries = EntriesService.convert_entries(data.Entries, param2, $scope.mode == 'edit');
-                
-                if($scope.mode == 'edit'){
-                    $scope.Entry = $scope.Entries[0];
-                    $scope.document_link = $scope.Entry.links[0];
-                    $scope.form_open_entry($scope.Entries);
-                }
-            }, document_link.href);
-        }
+            if($scope.mode == 'home' || $scope.mode == 'view' || $scope.mode == 'edit'){
+            	var fn = 'list',
+            	param = null,
+            	param2 = null,
+            	param3 = null;
+            	
+            	switch($scope.mode){
+            	case 'home':
+            		fn = 'list';
+            		if(_zhType == "list"){
+            			param = $routeParams.topicId;
+            		}else{
+            			param3 = $scope.rightSide.pagination.page;   
+            		}
+            		break;
+            	case 'view':
+            		fn = 'get';
+            		param = $routeParams.entryId;
+            		param2 = true;
+            		break;
+            	case 'edit':
+            		fn = 'get';
+            		param = $routeParams.entryId;
+            		param2 = false;
+            		break;
+            	}
+            	
+            	/**
+            	 * Get one or a list of forum entries
+            	 *
+            	 * @param param {Null, String} null, topic title, entry id
+            	 * @param callback {Function}
+            	 * @param document_link {String}
+            	 * @service EntriesService
+            	 * @method fn {String} list, get
+            	 */
+            	EntriesService[fn](param, function(data){
+            		if(!data) return $scope.mode == 'home' ? false : location.href = '#/';
+            		
+            		$scope.Entries = EntriesService.convert_entries(data.Entries, param2, $scope.mode == 'edit', $scope.Topics);
+            		
+            		if($scope.mode == 'edit'){
+            			$scope.Entry = $scope.Entries[0];
+            			$scope.form_open_entry($scope.Entries);
+            		}
+            	}, $scope.document_link.href, param3);
+            }
+            
+        }, $scope.document_link.href);
         
         
         // ------------------------ App HTML functions ---------------------------
+        /**
+         * search_action
+         *
+         * Search entries by name
+         *
+         * @void
+         */
+        $scope.search_action = function(e){
+            if(e !== true && e.keyCode != 13) return;
+            
+            if($scope.mode != 'home') location.href = '#/search/' + encodeURI($scope.searchInput);
+
+            var $header_search = $('.header-search'),
+                page = $scope.searchInput && $scope.searchInput.length > 0 ? null : 0;
+
+            $header_search.addClass('loading');
+
+            EntriesService.list(null, function(data){
+                if(!data) data = {Entries: []};
+
+                $scope.Entries = EntriesService.convert_entries(data.Entries, false, false, $scope.Topics);
+
+                $header_search.removeClass('loading');
+            }, $scope.document_link.href, page, $scope.Topic ? $scope.Topic.id : null, $scope.searchInput);
+        };
+        
         /**
          * open_topic
          *
@@ -445,6 +516,101 @@
         }
         
         /**
+         * paste_post_links
+         *
+         * Paste document links from clipboard to post form
+         *
+         * @param entry {Object} Entry
+         * @param index {Number} Entry index (in $scope.Entries)
+         */
+        $scope.paste_post_links = function(entry, index){
+            var post_links = $scope.rightSide.post_links[index] || [],
+                values = [];
+            
+            if(bsm && bsm.clipBoardData && bsm.clipBoardData.length > 0){
+                values = bsm.clipBoardData;
+                bsm.clipBoardData = [];
+            }
+            
+            for(var i = 0; i<values.length; i++){
+                var link = {
+                    href: values[i],
+                    title: values[i]
+                };
+
+                (function(link, index){
+                    DocumentsService.getName(link.href, function(data){
+                        if(!data) return false;
+                        link.title = data.Entries[0]["translation"];
+
+                        $scope.rightSide.post_links[index].push(link);
+                    });
+                })(link, index);
+            }
+            
+            $scope.rightSide.post_links[index] = post_links;
+        }
+        
+        /**
+         * remove_post_link
+         *
+         * Remove document link from post form 
+         *
+         * @param e {Object} Event
+         * @param id {Number} Document link index
+         * @param entry {Object} Entry
+         * @param index {Number} Entry index (in $scope.Entries)
+         */
+        $scope.remove_post_link = function(e, id, entry, index){
+            var post_links = $scope.rightSide.post_links[index] || [];
+            
+            if(post_links[id]){
+                post_links.splice(id, 1);   
+            }
+        }
+        
+        /**
+         * pagination
+         *
+         * Pagination function to load Entries on page
+         *
+         * @use $scope.rightSide.pagination
+         */
+        $scope.pagination = function(){
+            var pagination = $scope.rightSide.pagination,
+                scrollTop = $(window).scrollTop();
+            
+            if(scrollTop <= pagination.scrollTop) return false;
+            if(pagination.busy) return false;
+            
+            pagination.page++;
+            pagination.busy = true;
+            pagination.scrollTop = scrollTop;
+            
+            /**
+             * Get one or a list of forum entries
+             *
+             * @param page {Number} pagination.page
+             * @service EntriesService
+             */
+            EntriesService.list(null, function(data){
+                pagination.busy = false;
+                
+                if(!data) return false;
+
+                var Entries = EntriesService.convert_entries(data.Entries, null, null, $scope.Topics);
+                if(!$scope.Entries) {
+                	$scope.Entries = Entries
+                }
+                else {
+                	for(var i = 0; i<Entries.length; i++){
+                		$scope.Entries.push(Entries[i]);
+                	}
+                }
+            }, null, pagination.page);
+        }
+        
+        /**
          * _setRightSideCaption
          *
          * Set captions dynamically from captions request
@@ -459,10 +625,10 @@
                 return eval(title);
             }else{
                 setTimeout(function(key, title){
-                    _setRightSideCaption(key, title)   
+                    _setRightSideCaption(key, title);
                 }, 100, key, title);
                 
-                return "";
+                return " ";
             }
         }
         
@@ -479,10 +645,10 @@
         if($scope.mode == 'edit'){
             $scope.rightSide.formTitle = _setRightSideCaption("formTitle", "$filter('ucfirst')($scope.captions.editText)");
         }
-        if($scope.Topic && $scope.Topic.title){
-            $scope.rightSide.title = $scope.Topic.title;
+        if($scope.Topic && $scope.Topic.description){
+            $scope.rightSide.title = $scope.Topic.description;
         }
-        if($scope.document_link){
+        if($scope.document_link.href){
             $scope.rightSide.title = $scope.document_link.title;   
         }
         
@@ -493,8 +659,48 @@
          */
         if(_zhType == 'add') $scope.add_entry();
         
+        /**
+         * Enable pagination on first page
+         *
+         * @dependsOn {String} _zhType
+         */
+        if(!_zhType || _zhType == 'search') $scope.rightSide.pagination.disabled = false;
+        
+        /**
+         * Execute search action if isseted 'search' parameter in url
+         *
+         * @dependsOn {String} _zhType
+         */
+        if(_zhType == 'search') $scope.search_action(true);
+        
         
         // ----------------------- App Actions ----------------------------
+        /**
+         * form_open_entry
+         *
+         * Open Entry and set values for add form 
+         *
+         * @param entries {Array} entries
+         * @void
+         */
+        $scope.form_open_entry = function(entries){
+            if(!entries || !entries[0]) location.href = '#/';
+            
+            var entry = entries[0];
+            $scope.post_topic = entry.topic.title;
+            $scope.post_text = entry.text;
+            $scope.rightSide.post_links['form'] = entry.links;
+            
+            TopicsService.getTopicDescription(entry.topic, function(){
+                $scope.post_topic = entry.topic.description;
+            });
+            
+            //html
+            setTimeout(function(){
+                $('textarea._4aS').trigger('autosize.resize')
+            }, 100);
+        }
+        
         /**
          * form_post_entry
          *
@@ -505,19 +711,48 @@
          * @void
          */
         $scope.form_post_entry = function(entryId, index){
-            var el = entryId ? $('#entry-'+entryId).find('form') : $('#entry-form').find('form'),
+            var el = entryId ? $('#entry-' + entryId).find('form').first() : $('#entry-form').find('form').first(),
                 data = {
-                    topic: $scope.post_topic,
+                    topicTitle: $scope.post_topic,
                     text: $scope.post_text
                 }
+            
+            if($scope.Topic){
+                data.topic = $scope.Topic.id;   
+            }
+            
+            // ~ in use with jquery.autocomplete.js -> input[data-value]
+            if(el.find("input[ng-model='post_topic'][data-value]").size() > 0){
+                var topic_data = el.find("input[ng-model='post_topic']").first().attr("data-value");
+                try{
+                    topic_data = JSON.parse(topic_data);
+                }catch(e){
+                    topic_data = null;
+                }
+                
+                if(topic_data && topic_data.id){
+                    delete(data.topic), delete(data.topicTitle), delete(data.topicLink);
+                    
+                    data.topic = topic_data.id;   
+                }
+            }
             
             if(entryId){
                 data.inReplyTo = entryId;
                 data.text = $scope.rightSide.post_text[entryId];
             }
             
-            if($scope.document_link){
-                data.links = [$scope.document_link.href];
+            if($scope.document_link.href){
+                data.topicLink = $scope.document_link.href;
+            }
+            
+            if($scope.rightSide.post_links[!entryId ? 'form' : entryId]){
+                var post_links = $scope.rightSide.post_links[!entryId ? 'form' : entryId];
+                data.links = [];
+                
+                for(var i = 0; i<post_links.length; i++){
+                    data.links.push(post_links[i].href);
+                }
             }
             
             el.find('button:submit').attr('disabled','disabled');
@@ -552,9 +787,10 @@
                         if(!entryId){
                             location.reload();
                         }else{
-                            var entries = EntriesService.convert_entries(data.Entries, null, true);
+                            var entries = EntriesService.convert_entries(data.Entries, null, true, $scope.Topics);
                             $scope.Entries[index].comments.push(entries[0]);
                             
+                            $scope.rightSide.post_links[entryId] = [];
                             el.get(0).reset();
                             el.closest('.form-was-focused').removeClass('form-was-focused');
                         }
@@ -573,6 +809,8 @@
                      * @service EntriesService
                      * @method create
                      */
+                    delete(data.topic), delete(data.topicTitle), delete(data.topicLink);
+                    
                     EntriesService.update($routeParams.entryId, data, function(data){
                         if(!data){
                             // Notify of error request
@@ -590,27 +828,6 @@
                     
                 break;
             }
-        }
-        
-        /**
-         * form_open_entry
-         *
-         * Open Entry and set values for add form 
-         *
-         * @param entries {Array} entries
-         * @void
-         */
-        $scope.form_open_entry = function(entries){
-            if(!entries || !entries[0]) location.href = '#/';
-            
-            var entry = entries[0];
-            $scope.post_topic = entry.topic;
-            $scope.post_text = entry.text;
-            
-            //html
-            setTimeout(function(){
-                $('textarea._4aS').trigger('autosize.resize')
-            }, 100);
         }
         
         /**
@@ -682,10 +899,10 @@
                     // Notify of success request
                     OthersService.notify($scope.captions.message, $scope.captions.entryDeleted, "<i class=\"fa fa-check-circle\"></i>");
                     
-                    if(!parentIndex){
-                        $scope.Entries.splice(index, 1);
-                    }else{
+                    if(parentIndex || parentIndex == 0){
                         $scope.Entries[parentIndex].comments.splice(index, 1);
+                    }else{
+                    	$scope.Entries.splice(index, 1);
                     }
                     
                     parent.queue(function(){
@@ -720,11 +937,17 @@
      * @method get {function}
      * @method find {function}
      * @method update {function}
+     * @method getTopicDescription {function}
      */
-    app.service('TopicsService', function($http, AjaxService){
-        this.list = function(callback, filter){
-            AjaxService.send('get', 'api/json/' + clientId + '/topics' + (filter != null ? '?link=' + filter : '')).success(function(r){
-                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
+    app.service('TopicsService', function($http, DocumentsService, AjaxService){
+        this.list = function(callback, topicLink){
+            var url = 'api/json/' + clientId + '/topics',
+                filters = {};
+            
+        	if(topicLink) filters["topicLink"] = topicLink;
+            
+            AjaxService.send('get', url + '?' + _location.createQueryData(filters)).success(function(r){
+                if(r.StatusCode && r.StatusCode.CodeNumber == 0 && r.Entries){
                     if(callback){callback(r);}else{return true;};
                 }else{
                     if(callback){callback(false);}else{return false;};
@@ -736,7 +959,7 @@
         
         this.get = function(id, callback, opts){
             AjaxService.send('get', 'api/json/' + clientId + '/topics/' + id).success(function(r) {
-                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
+                if(r.StatusCode && r.StatusCode.CodeNumber == 0 && r.Entries){
                     if(callback){callback(r, (opts ? opts : null));}else{return true;};
                 }else{
                     if(callback){callback(false);}else{return false;};
@@ -748,7 +971,7 @@
         
         this.find = function(d, callback){
             AjaxService.send('get', 'api/json/' + clientId + '/topics?title=' + d).success(function(r) {
-                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
+                if(r.StatusCode && r.StatusCode.CodeNumber == 0 && r.Entries){
                     if(callback){callback(r);}else{return true;};   
                 }else{
                     if(callback){callback(false);}else{return false;};
@@ -760,7 +983,7 @@
         
         this.update = function(id, data, callback){
             AjaxService.send('put',  'api/json/' + clientId + '/topics/' + id, data).success(function(r){
-                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
+                if(r.StatusCode && r.StatusCode.CodeNumber == 0 && r.Entries){
                     if(callback){callback(r);}else{return true;};
                 }else{
                     if(callback){callback(false);}else{return false;};
@@ -768,6 +991,23 @@
             }).error(function(){
                 if(callback){callback(false);}else{return false;}; 
             }); 
+        }
+        
+        this.getTopicDescription = function(topic, callback){
+            topic.description = topic.title;
+            
+            (function(Topic, callback){
+                if(Topic.link){
+                    DocumentsService.getName(Topic.link, function(data){
+                        if(!data) return false;
+
+                        Topic.description = Topic.title + " (" + data.Entries[0]["translation"] + ")";
+                        if(callback) callback();
+                    });
+                }else{
+                    if(callback) callback();   
+                }
+            })(topic, callback);
         }
     });
     
@@ -785,10 +1025,19 @@
      * @method replies {function}
      * @method convert_entries {function}
      */
-    app.service('EntriesService', function($http, AjaxService, DocumentsService, OthersService){
-        this.list = function(id, callback, filter){
-            AjaxService.send('get', 'api/json/' + clientId + '/forumentries' + (id != null ? '?topic='+ id : '') + (filter != null ? (id==null ? '?' : '&') + 'link=' + filter : '')).success(function(r){
-                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
+    app.service('EntriesService', function($http, AjaxService, TopicsService, DocumentsService, OthersService){
+        this.list = function(id, callback, topicLink, page, topicTitle, search){
+            var url = 'api/json/' + clientId + '/forumentries',
+                filters = {};
+            
+        	if(id) filters["topic"] = id;
+        	if(page != null) filters["page"] = page;
+        	if(topicLink) filters["topicLink"] = topicLink;
+        	if(topicTitle) filters["topic"] = topicTitle;
+        	if(search != null) filters["search"] = search;
+            
+            AjaxService.send('get', url + '?' + _location.createQueryData(filters)).success(function(r){
+                if(r.StatusCode && r.StatusCode.CodeNumber == 0 && r.Entries){
                     if(callback){callback(r);}else{return true;};
                 }else{
                     if(callback){callback(false);}else{return false;};
@@ -800,7 +1049,7 @@
         
         this.get = function(id, callback, opts){
             AjaxService.send('get', 'api/json/' + clientId + '/forumentries/' + id).success(function(r){
-                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
+                if(r.StatusCode && r.StatusCode.CodeNumber == 0 && r.Entries){
                     if(callback){callback(r,(opts ? opts : null));}else{return true;};
                 }else{
                     if(callback){callback(false);}else{return false;};
@@ -812,7 +1061,7 @@
         
         this.create = function(data, callback){
             AjaxService.send('post', 'api/json/' + clientId + '/forumentries', data).success(function(r){
-               if(r.StatusCode && r.StatusCode.CodeNumber == 0){
+               if(r.StatusCode && r.StatusCode.CodeNumber == 0 && r.Entries){
                     if(callback){callback(r);}else{return true;};
                 }else{
                     console.log(r);
@@ -825,7 +1074,7 @@
         
         this.update = function(id, data, callback){
             AjaxService.send('put',  'api/json/' + clientId + '/forumentries/' + id, data).success(function(r){
-               if(r.StatusCode && r.StatusCode.CodeNumber == 0){
+               if(r.StatusCode && r.StatusCode.CodeNumber == 0 && r.Entries){
                     if(callback){callback(r);}else{return true;}
                 }else{
                     console.log(r);
@@ -851,7 +1100,7 @@
         
         this.like = function(id, data, callback, opts){
             AjaxService.send('put', 'api/json/' + clientId + '/likes/^.|Forum|ForumEntry|1|' + id, data).success(function(r){
-                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
+                if(r.StatusCode && r.StatusCode.CodeNumber == 0 && r.Entries){
                     if(callback){callback(r,(opts ? opts : null));}else{return true;};
                 }else{
                     if(callback){callback(false);}else{return false;};
@@ -863,7 +1112,7 @@
         
         this.likes = function(id, callback, opts){
             AjaxService.send('get', 'api/json/' + clientId + '/likes/^.|Forum|ForumEntry|1|' + id).success(function(r){
-                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
+                if(r.StatusCode && r.StatusCode.CodeNumber == 0 && r.Entries){
                     if(callback){callback(r,(opts ? opts : null));}else{return true;};
                 }else{
                     if(callback){callback(false);}else{return false;};
@@ -875,7 +1124,7 @@
         
         this.replies = function(id, callback, opts){
             AjaxService.send('get', 'api/json/' + clientId + '/forumentries' + (id != null ? '?inReplyTo='+ id : '' )).success(function(r){
-                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
+                if(r.StatusCode && r.StatusCode.CodeNumber == 0 && r.Entries){
                     if(callback){callback(r, (opts ? opts : null));}else{return true;};
                 }else{
                     if(callback){callback(false);}else{return false;};
@@ -885,10 +1134,14 @@
             });
         }
         
-        this.convert_entries = function(entries, getComments, areComments){
+        this.convert_entries = function(entries, getComments, areComments, Topics){
             var data = entries.filter(function(value, index){
                 return (areComments ? true : !value.inReplyTo);
             });
+            
+            data = data.sort(function(a,b){
+                return +new Date(b.lastModified) - +new Date(a.lastModified);
+            })
             
             for(var i = 0, val = null; i<entries.length; i++){
                 val = entries[i];
@@ -896,13 +1149,44 @@
                 //user avatar
                 val.lastModifiedByImageURL = '/projectile/' + val.lastModifiedByImageURL;
                 
+                //topic
+                val.topic = {
+                    id: val.topic,
+                    title: val.topic,
+                    link: null,
+                    description: val.topic
+                };
+                if(Topics){
+                    for(key in Topics){
+                        if(Topics[key].id == val.topic.id){
+                            val.topic.title = Topics[key].title;
+                            val.topic.description = Topics[key].title;
+                            val.topic.link = Topics[key].link;
+                            
+                            TopicsService.getTopicDescription(val.topic);
+                        }
+                    }
+                }else{
+                    (function(topicId, Entry){
+                        TopicsService.get(topicId, function(data){
+                            if(!data) return false;
+
+                            Entry.topic.title = data.Entries[0]["title"];
+                            Entry.topic.description = data.Entries[0]["title"];
+                            Entry.topic.link = data.Entries[0]["link"];
+                            
+                            TopicsService.getTopicDescription(Entry.topic);
+                        });
+                    })(val.topic.id, val);
+                }
+                
                 //links
                 for(var k = 0; k<val.links.length; k++){
                     val.links[k] = {href: val.links[k], title: ''};
                     
                     (function(documentLink, linksKey, Entry){
                         DocumentsService.getName(documentLink, function(data){
-                            if(!data || !data.Entries){ return false }
+                            if(!data) return false;
 
                             Entry.links[linksKey].title = data.Entries[0]["translation"];
                         });
@@ -923,12 +1207,12 @@
                 })(this, val);
                 
                 //comments
-                val.comments = [];
+                if(!val.comments) val.comments = [];
                 if(getComments){
                     (function(EntriesService, entry){
                         EntriesService.replies(entry.id, function(data){
                             if(data && data.Entries){
-                                entry.comments = EntriesService.convert_entries(data.Entries, false, true);
+                                entry.comments = EntriesService.convert_entries(data.Entries, false, true, Topics);
                             }
 
                         });
@@ -963,7 +1247,7 @@
     app.service('UsersService', function($http, AjaxService){
         this.get = function(id, callback){
             AjaxService.send('get', 'api/json/' + clientId + '/employees/'+ id).success(function(r){
-                if(r.StatusCode && r.StatusCode.CodeNumber == 0){
+                if(r.StatusCode && r.StatusCode.CodeNumber == 0 && r.Entries){
                     if(callback){callback(r);}else{return true;};
                 }else{
                     if(callback){callback(false);}else{return false;};
@@ -1205,6 +1489,14 @@
             else
                 return decodeURIComponent(results[1].replace(/\+/g, " "));
         },
+        createQueryData: function(data, useFirst){
+            var ret = [];
+            for (var d in data){
+                ret.push(encodeURIComponent(d) + "=" + encodeURIComponent(data[d]));
+            }
+            
+            return ret.join("&");;
+        },
         redirect_to: function(url){
             location.href = url;
         }
@@ -1241,7 +1533,7 @@
         
         setTimeout(function(){
             // enable input autocomplete
-            $('input#inputTopic').autocomplete({url: restBase + 'api/json/' + clientId + '/topics' + (window.topicsDocumentFilter ? '?link=' + window.topicsDocumentFilter : ''), dropdownBtn: '<a class="inputTopicAdd-drop"><i class="fa fa-sort"></i></a>'});
+            $('input#inputTopic').autocomplete({baseUrl: restBase + 'api/json/' + clientId, url: '/topics' + (window.topicsDocumentFilter ? '?topicLink=' + window.topicsDocumentFilter : ''), dropdownBtn: '<a class="inputTopicAdd-drop"><i class="fa fa-sort"></i></a>'});
         }, 100);
         
         //remove tipsy {Bug}
