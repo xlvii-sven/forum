@@ -192,6 +192,12 @@ blockquote {
 .mt5 {
     margin-top: 5px !important;
 }
+.mb6 {
+    margin-bottom: 6px !important;
+}
+.mt6 {
+    margin-top: 6px !important;
+}
 .mr5 {
     margin-right: 5px !important;
 }
@@ -362,6 +368,16 @@ blockquote {
 .panel.panel-heading-only .panel-heading {
     border-bottom: 0;
     padding-bottom: 0;
+}
+
+.row .topic {
+	margin-top: 6px !important;
+	margin-bottom: 0px !important;
+}
+
+.row .btn-custom-3 {
+    border-radius: 18px;
+    font-size: 12px;
 }
 
 .panel .panel-body {
