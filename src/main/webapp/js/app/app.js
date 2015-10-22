@@ -2,7 +2,7 @@
  * Forum | Application
  * Copyright (c) 2015 Infodesire
  * Website: http://infodesire.com/
- * Version: 0.0.8 (07-Oct-2015)
+ * Version: 0.0.9 (22-Oct-2015)
  * Requires: AngularJS 1.3 or later, jQuery v1.7.1 or later 
  */
 (function(){
@@ -85,8 +85,9 @@
         var captions = {
             Forum: "Default|Forum",
             document: "Document|Document",
-            last: "Tooltip|Last",
+            lastEntries: "Forum|LastEntries",
             search: "Tooltip|search",
+            addTopic: "${Phrases:Add%20$0}:::${Document:Topic}",
             addText: "${Phrases:Add%20$0}:::${Document:Entry}",
             in: "Default|in",
             name: "Document|Name",
@@ -110,7 +111,7 @@
             entryCreated: "${Phrases:$0 was created}:::${Document:Entry}",
             entryEdited: "${Phrases:$0 was saved}:::${Document:Entry}",
             entryDeleted: "${Phrases:$0 was deleted}:::${Document:Entry}",
-            addTopicInput: "Forum|Select or create topic",
+            addTopicInput: "${Phrases:create%20$0}:::${Document:Topic}",
             errorTitle: "System|Error",
             errorText: "Access|Access denied",
             like: "Forum|Like",
@@ -189,7 +190,7 @@
             title: null, // title box text
             showList: true, // show entries list
             showForm: false, // show add form
-            formTitle: _setRightSideCaption('formTitle', '$scope.captions.addText'), // add form title text
+            formTitle: _setRightSideCaption('formTitle', '$scope.captions.addTopic'), // add form title text
             entryCommentsLimit: 3, // entry comments limit
             pagination: {
                 disabled: true,
@@ -234,7 +235,7 @@
                 $scope.Topic.title = data.Entries[0].title;
                 $scope.Topic.link = data.Entries[0].link;
                 TopicsService.getTopicDescription($scope.Topic, function(){
-                    _setRightSideCaption("title", "$filter('ucfirst')($scope.Topic.description)");
+                    _setRightSideCaption("title", "($scope.Topic.description)");
                 });
             });
         }
@@ -421,12 +422,23 @@
          *
          * @param e {Object} Event
          */
-        $scope.add_entry = function(e){
+        $scope.add_entry = function(e, topic){
             if(e) e.preventDefault();
             
             if($scope.mode != 'home') location.href = '#/add';
             
-            $scope.rightSide.showForm = !$scope.rightSide.showForm;
+            $scope.rightSide.showForm = true;
+            
+            if(topic){
+                $scope.rightSide.formTitle = _setRightSideCaption("formTitle", "$scope.captions.addText");
+                $scope.post_topic = topic.description;
+                $('#inputTopic').attr('disabled', 'disabled');
+            }
+            else {
+            	$scope.rightSide.formTitle = _setRightSideCaption('formTitle', '$scope.captions.addTopic')
+            	$scope.post_topic = null;
+            	$('#inputTopic').removeAttr('disabled');
+            }
             
             if($scope.rightSide.showForm){
                 setTimeout(function(){
@@ -607,7 +619,7 @@
                 		$scope.Entries.push(Entries[i]);
                 	}
                 }
-            }, null, pagination.page);
+            }, $scope.document_link.href, pagination.page, $scope.Topic ? $scope.Topic.id : null, $scope.searchInput);
         }
         
         /**
@@ -626,6 +638,7 @@
             }else{
                 setTimeout(function(key, title){
                     _setRightSideCaption(key, title);
+                    $scope.$apply();
                 }, 100, key, title);
                 
                 return " ";
@@ -640,7 +653,7 @@
          * @dependsOn {String} mode
          */
         if($scope.mode == 'home'){
-            $scope.rightSide.title = _setRightSideCaption("title", "$filter('ucfirst')($scope.captions.last + ' ' + $scope.captions.entries)");
+            $scope.rightSide.title = _setRightSideCaption("title", "($scope.captions.lastEntries)");
         }
         if($scope.mode == 'edit'){
             $scope.rightSide.formTitle = _setRightSideCaption("formTitle", "$filter('ucfirst')($scope.captions.editText)");
@@ -1531,10 +1544,10 @@
             $(this).closest('.comments-post-form').addClass('form-was-focused'); 
         });
         
-        setTimeout(function(){
-            // enable input autocomplete
-            $('input#inputTopic').autocomplete({baseUrl: restBase + 'api/json/' + clientId, url: '/topics' + (window.topicsDocumentFilter ? '?topicLink=' + window.topicsDocumentFilter : ''), dropdownBtn: '<a class="inputTopicAdd-drop"><i class="fa fa-sort"></i></a>'});
-        }, 100);
+//        setTimeout(function(){
+//            // enable input autocomplete
+//            $('input#inputTopic').autocomplete({baseUrl: restBase + 'api/json/' + clientId, url: '/topics' + (window.topicsDocumentFilter ? '?topicLink=' + window.topicsDocumentFilter : ''), dropdownBtn: '<a class="inputTopicAdd-drop"><i class="fa fa-sort"></i></a>'});
+//        }, 100);
         
         //remove tipsy {Bug}
         $(".tipsy").remove();

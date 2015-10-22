@@ -16,7 +16,7 @@
                 </div>
                 
                 <div class="col-xs-4 header-menu text-right">
-                    <a class="btn btn-custom-3 color-text-3" ng-click="add_entry($event)"><i class="fa fa-plus"></i> {{captions.addText}}</a>
+                    <a class="btn btn-custom-3 color-text-3" ng-click="add_entry($event)"><i class="fa fa-plus"></i> {{captions.addTopic}}</a>
                 </div>
             </div>
         </div>
@@ -118,9 +118,14 @@
             
             <!-- title -->
             <div class="panel panel-bordered panel-heading-only" ng-if="rightSide.title">
-                <div class="panel-heading">
-                    <h4 class="mt0 mb0">{{rightSide.title}}</h4>
-                </div>
+            	<div class="row">
+	                <div class="panel-heading col-xs-8">
+	                    <h4 class="mt6 mb6" ng-class="{topic:Topic}">{{rightSide.title}}</h4>
+	                </div>
+	                <div class="col-xs-4 text-right" ng-if="Topic">
+	                    <a class="btn btn-custom-3 color-text-3" ng-click="add_entry($event,Topic)"><i class="fa fa-plus"></i> {{captions.addText}}</a>
+	                </div>
+            	</div>
             </div>
             
             <!-- Entries List -->
