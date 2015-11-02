@@ -2,7 +2,7 @@
  * Forum | Application
  * Copyright (c) 2015 Infodesire
  * Website: http://infodesire.com/
- * Version: 0.0.9 (22-Oct-2015)
+ * Version: 0.0.10 (02-Nov-2015)
  * Requires: AngularJS 1.3 or later, jQuery v1.7.1 or later 
  */
 (function(){
@@ -429,14 +429,18 @@
             
             $scope.rightSide.showForm = true;
             
+            $scope.post_topic = null;
+            $scope.post_text = null;
+            $scope.rightSide.post_links['form'] = [];
+            $scope.useOpenedTopic = true;
+            
             if(topic){
                 $scope.rightSide.formTitle = _setRightSideCaption("formTitle", "$scope.captions.addText");
                 $scope.post_topic = topic.description;
                 $('#inputTopic').attr('disabled', 'disabled');
-            }
-            else {
+            }else{
             	$scope.rightSide.formTitle = _setRightSideCaption('formTitle', '$scope.captions.addTopic')
-            	$scope.post_topic = null;
+                $scope.useOpenedTopic = false;
             	$('#inputTopic').removeAttr('disabled');
             }
             
@@ -730,7 +734,7 @@
                     text: $scope.post_text
                 }
             
-            if($scope.Topic){
+            if($scope.Topic && $scope.useOpenedTopic){
                 data.topic = $scope.Topic.id;   
             }
             
